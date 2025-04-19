@@ -1,37 +1,61 @@
 package ru.example.edu.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.example.edu.model.Student;
+import ru.example.edu.repository.StudentRepository;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 public class StudentController {
-    private List<Student> studentList = new ArrayList<>();
-    private long countId = 0;
+    private final StudentRepository repository;
+
+    public StudentController(StudentRepository repository) {
+        this.repository = repository;
+    }
 
     @GetMapping("/student")
     public List<Student> getStudentList() {
-        return studentList;
+        return repository.findAll();
     }
 
     @PostMapping("/student")
+    @ResponseStatus(code = HttpStatus.CREATED)
     public long saveStudent(@RequestParam String name, @RequestParam String email, @RequestParam int age) {
-        countId = countId + 1;
-        Student savedStudent = new Student(countId, name, email, age);
-        studentList.add(savedStudent);
-        return savedStudent.getId();
+        Student std = new Student(name, email, age);
+        std = repository.save(std);
+
+        return std.getId();
     }
 
     @GetMapping("/student/{id}")
     public Student getStudentById(@PathVariable long id) {
+        Student st = repository.findById(id).get();
 
-        for (Student student : studentList) {
-            if (student.getId() == id) return student;
+        return st;
+    }
+
+    @PutMapping("/student/{id}")
+    public Student updateStudent(@PathVariable long id, @RequestBody Student st) {
+        Optional<Student> findStudent = repository.findById(id);
+        if (findStudent.isPresent()) {
+            Student student = findStudent.get();
+
+            student.setName(st.getName());
+            student.setEmail(st.getEmail());
+            student.setAge(st.getAge());
+
+            return repository.save(student);
+        } else {
+            return null;
         }
+    }
 
-        return null;
+    @DeleteMapping("/student/{id}")
+    public void deleteStudent(@PathVariable long id) {
+        repository.deleteById(id);
     }
 
 }
